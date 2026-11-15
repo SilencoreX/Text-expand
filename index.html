@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Text Expander Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f4ee;--tx:#2a2620;--mu:#8a8276;--gl:rgba(255,255,255,.62);--st:rgba(255,255,255,.95);--ln:#e8e2d6;--fd:rgba(255,255,255,.78);--a:#b08d57;--b:#d9b77f;--ff:system-ui,-apple-system,Roboto,"Segoe UI",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:400 14px/1.5 Sora,system-ui,sans-serif;color:var(--tx);min-height:100vh;overflow-x:hidden;
+background:radial-gradient(900px 500px at 8% -5%,#efe6ff 0,transparent 60%),radial-gradient(800px 500px at 100% 10%,#ffe9ee 0,transparent 60%),radial-gradient(900px 600px at 40% 110%,#e3f3f1 0,transparent 60%),var(--bg);background-attachment:fixed}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 70px}
+.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:10px;flex-wrap:wrap}
+h1{font-size:25px;font-weight:700;letter-spacing:-.02em}h1 span{font-weight:300;color:var(--a)}
+.glass{position:relative;background:var(--gl);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--st);border-radius:28px;box-shadow:inset 0 1px 0 #fff,0 20px 50px rgba(120,100,60,.12);padding:20px;overflow:hidden}
+.glass::before{content:"";position:absolute;inset:0;background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.9),transparent 60%);pointer-events:none}
+.glass>*{position:relative}
+.grid{display:grid;gap:16px}
+@media(min-width:900px){.grid{grid-template-columns:1fr 420px;align-items:start}.stick{position:sticky;top:16px}}
+.lb{font-size:12px;color:var(--mu);margin:18px 0 8px;font-weight:600}.lb:first-child{margin-top:0}
+.fld{width:100%;padding:16px 18px;border-radius:18px;border:1px solid var(--ln);background:var(--fd);color:var(--tx);font:600 18px Sora,sans-serif;outline:0}
+.fld.sm{font-size:13px;padding:10px 14px;margin-top:8px;border-radius:14px}
+.fld:focus{border-color:var(--a);box-shadow:0 0 0 4px rgba(176,141,87,.15)}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.ch{border:1px solid var(--ln);background:var(--fd);color:var(--tx);padding:9px 13px;border-radius:14px;font:600 12px Sora,sans-serif;cursor:pointer;transition:transform .15s}
+.ch:hover{border-color:var(--a)}.ch:active{transform:scale(.95)}
+.ch.on{background:linear-gradient(135deg,var(--a),var(--b));color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(120,100,60,.3),inset 0 1px 0 rgba(255,255,255,.5)}
+.tpl{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px}
+.tpl .ch{display:flex;flex-direction:column;align-items:center;padding:10px 2px;font-size:10px}
+.tpl b{font-size:19px;font-weight:600}
+.top{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px;flex-wrap:wrap}
+.cp{border:0;cursor:pointer;padding:12px 22px;border-radius:16px;font:700 13px Sora,sans-serif;color:#fff;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 8px 22px rgba(120,100,60,.35),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .15s}
+.cp:active{transform:scale(.95)}
+.pv{margin-top:12px;min-height:230px;max-height:62vh;border-radius:22px;background:var(--fd);border:1px solid var(--ln);padding:22px;overflow:auto;font:400 var(--fs,28px)/1.4 var(--ff);color:var(--tx)}
+.pv .l{display:block;min-height:1em;white-space:pre-wrap;overflow-wrap:anywhere}
+.pv .blk{display:table;margin:0 auto}.pv .blk .l{white-space:pre;overflow-wrap:normal}
+.pv.geo{line-height:1.3}
+.ph{color:var(--mu);text-align:center;margin-top:70px}
+.note{font-size:11px;color:var(--mu);margin-top:10px}
+input[type=range]{width:100%;accent-color:var(--a)}
+.sl{display:flex;align-items:center;gap:10px;margin-bottom:8px}.sl span{width:96px;font-size:12px;color:var(--mu);flex:none}
+.dim{opacity:.38;pointer-events:none}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid #fff;cursor:pointer;box-shadow:0 0 0 1px var(--ln)}.sw.on{box-shadow:0 0 0 2px var(--tx)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);opacity:0;padding:12px 20px;border-radius:16px;background:#2a2620;color:#fff;font-weight:600;font-size:13px;transition:.3s;z-index:9;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="hd"><h1>Text Expander <span>Studio</span></h1><div class="row" id="lk"></div></div>
+<div class="grid">
+<section class="glass stick">
+<div class="lb">Your text</div>
+<input class="fld" id="t" value="Love" placeholder="Type anything…" maxlength="60" autocomplete="off">
+<div class="top"><div class="row"><button class="ch" id="sh">Share</button><button class="ch" id="sv">Save .txt</button></div><button class="cp" id="cp">Copy</button></div>
+<div class="pv" id="pv"></div>
+<p class="note" id="nt"></p>
+<div id="rcg"><div class="lb">Recent copies</div><div class="row" id="rc"></div></div>
+</section>
+<section class="glass">
+<div class="lb">Templates</div><div class="tpl" id="tp"></div>
+<div id="fillg"><div class="lb">Shape fill</div><div class="row" id="fl"></div><input class="fld sm" id="cf" placeholder="Custom symbol" maxlength="4"></div>
+<div class="lb">Font style</div><div class="row" id="st"></div><p class="note" id="stn"></p>
+<div class="lb">Effect</div><div class="row" id="fx"></div>
+<div class="lb">Expand by</div><div class="row" id="un"></div>
+<div id="alg"><div class="lb">Alignment</div><div class="row" id="al"></div></div>
+<div class="lb">Decoration</div><div class="row" id="dc"></div>
+<div class="lb">Options</div><div class="row" id="op"></div>
+<div class="lb">Tune</div>
+<div class="sl"><span>Preview size</span><input type="range" id="r1" min="14" max="48" value="28"></div>
+<div class="sl"><span id="nl">Size</span><input type="range" id="r4" min="6" max="24" value="12"></div>
+<div class="lb">Accent</div><div class="row" id="sw"></div>
+</section>
+</div>
+</div>
+<div class="toast" id="ts"></div>
+<script>
+const $=s=>document.querySelector(s);
+const FF='system-ui,-apple-system,Roboto,"Segoe UI",sans-serif';
+const O=(u,l,d,ex)=>({u,l,d,ex});
+const ST={normal:O(),bold:O(0x1D400,0x1D41A,0x1D7CE),italic:O(0x1D434,0x1D44E,0,{h:'ℎ'}),bolditalic:O(0x1D468,0x1D482),
+script:O(0x1D49C,0x1D4B6,0,{B:'ℬ',E:'ℰ',F:'ℱ',H:'ℋ',I:'ℐ',L:'ℒ',M:'ℳ',R:'ℛ',e:'ℯ',g:'ℊ',o:'ℴ'}),
+boldscript:O(0x1D4D0,0x1D4EA),fraktur:O(0x1D504,0x1D51E,0,{C:'ℭ',H:'ℌ',I:'ℑ',R:'ℜ',Z:'ℨ'}),
+double:O(0x1D538,0x1D552,0x1D7D8,{C:'ℂ',H:'ℍ',N:'ℕ',P:'ℙ',Q:'ℚ',R:'ℝ',Z:'ℤ'}),
+sans:O(0x1D5D4,0x1D5EE,0x1D7EC),mono:O(0x1D670,0x1D68A,0x1D7F6),circle:O(0x24B6,0x24D0),wide:O(0xFF21,0xFF41,0xFF10),
+small:{u:65,sm:[...'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ']}};
+const SN=[['normal','Normal'],['bold','Bold'],['italic','Italic'],['bolditalic','Bold italic'],['script','Script'],['boldscript','Bold script'],['fraktur','Fraktur'],['double','Outline'],['sans','Sans bold'],['mono','Mono'],['circle','Bubble'],['wide','Wide'],['small','Small caps']];
+function conv(t,k){const s=ST[k];if(!s||!s.u)return t;return Array.from(t).map(c=>{
+ if(s.ex&&s.ex[c])return s.ex[c];const x=c.charCodeAt(0);
+ if(x>=65&&x<=90)return String.fromCodePoint(s.u+x-65);
+ if(x>=97&&x<=122)return s.sm?s.sm[x-97]:String.fromCodePoint(s.l+x-97);
+ if(s.d&&x>=48&&x<=57)return String.fromCodePoint(s.d+x-48);return c}).join('')}
+// Does this phone have glyphs for each style? A missing glyph is blank or a hollow box
+// (ink on all four edges of its bounding box). Real letters never look like that.
+const OK={};
+(function(){const N=100,c=document.createElement('canvas');c.width=c.height=N*1.6;const x=c.getContext('2d',{willReadFrequently:true});x.font=N+'px '+FF;
+ const bad=ch=>{x.clearRect(0,0,c.width,c.height);x.fillText(ch,20,N*1.1);
+  const w=c.width,h=c.height,d=x.getImageData(0,0,w,h).data,ink=(i,j)=>d[(j*w+i)*4+3]>110;
+  let x0=w,x1=-1,y0=h,y1=-1;
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(ink(i,j)){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j}
+  if(x1<0)return true;
+  const bw=x1-x0+1,bh=y1-y0+1;
+  const row=j=>{let n=0;for(let i=x0;i<=x1;i++)if(ink(i,j))n++;return n};
+  const col=i=>{let n=0;for(let j=y0;j<=y1;j++)if(ink(i,j))n++;return n};
+  const top=Math.max(row(y0),row(y0+1),row(y0+2)),bot=Math.max(row(y1),row(y1-1),row(y1-2));
+  const lef=Math.max(col(x0),col(x0+1),col(x0+2)),rig=Math.max(col(x1),col(x1-1),col(x1-2));
+  return bw>N*.25&&top>=.8*bw&&bot>=.8*bw&&lef>=.8*bh&&rig>=.8*bh};
+ SN.forEach(([k])=>{OK[k]=k=='normal'||!['A','a','m','Z'].some(ch=>bad(conv(ch,k)))})})();
+// Width measuring: shapes are padded using real glyph widths of this device font.
+const cx=document.createElement('canvas').getContext('2d');cx.font='100px '+FF;
+const W=s=>cx.measureText(s).width/100;
+const SPS=['\u2003','\u2002','\u2004','\u2005','\u2009','\u2006','\u200A',' '].map(c=>[c,W(c)]).filter(x=>x[1]>.04).sort((a,b)=>b[1]-a[1]);
+function gap(w){let s='',r=w;if(w<.05)return s;for(const[c,x]of SPS){let n=0;while(r>=x&&n++<60){s+=c;r-=x}}const l=SPS[SPS.length-1];if(r>=l[1]*.55)s+=l[0];return s}
+const STY=()=>OK[S.style]?S.style:'normal';
+const EF={under:'\u0332',dunder:'\u0333',strike:'\u0336',over:'\u0305'};
+const ZA=[...'\u030d\u030e\u0304\u0305\u033f\u0311\u0306\u0310\u0352\u0357'],ZB=[...'\u0316\u0317\u0318\u0319\u031c\u031d\u031e\u031f\u0320\u0324'];
+function fx(l){const e=S.fx;if(e=='none')return l;let i=0;return Array.from(l).map(c=>{if(!/[\p{L}\p{N}]/u.test(c))return c;const j=i++;return c+(e=='zalgo'?ZA[(j*7+3)%10]+ZA[(j*3+1)%10]+ZB[(j*5)%10]:EF[e])}).join('')}
+const TP=[['expand','▲','Expand'],['pyramid','△','Pyramid'],['diamond','◇','Diamond'],['vertical','⋮','Vertical'],['stair','◢','Stairs'],['wave','∿','Wave'],['heart','♥\uFE0E','Heart'],['circle','●','Circle'],['star','★','Star'],['box','▣','Frame'],['repeat','↻','Repeat']];
+const GEO=['pyramid','diamond','stair','wave','heart','circle','star','box'],DEC=['expand','vertical','repeat'],SHP=['heart','circle','star'];
+const HT='♥\uFE0E';
+const FILL=[['text','Your text'],[HT,HT],['★','★'],['●','●'],['◆','◆'],['✦','✦'],['❀','❀']];
+const FX=[['none','None'],['under','Underline'],['dunder','Double'],['strike','Strike'],['over','Overline'],['zalgo','Glitch']];
+const S={text:'Love',tpl:'expand',style:'normal',unit:'char',align:'center',deco:'',fill:'text',fx:'none',rev:false,inv:true,out:false,size:28,n:12};
+function build(){
+ const t=S.text.trim(),w=S.unit=='word',k=S.tpl,n=S.n,geo=GEO.includes(k),sty=STY();
+ const raw=w?t.split(/\s+/).filter(Boolean):Array.from(t);
+ if(!raw.length)return{L:[],geo};
+ const sv=x=>conv(x,sty),U=raw.map(sv),J=w?' ':'',T=sv(t);
+ const ex=()=>U.map((_,i)=>U.slice(0,i+1).join(J));
+ const ctr=a=>{const m=Math.max(...a.map(W));return a.map(l=>gap((m-W(l))/2)+l)};
+ let L;
+ if(k=='expand')L=ex();
+ else if(k=='pyramid')L=ctr(ex());
+ else if(k=='diamond'){const e=ex();L=ctr(e.concat(e.slice(0,-1).reverse()))}
+ else if(k=='vertical')L=U.slice();
+ else if(k=='stair')L=Array.from({length:n},(_,i)=>gap(i*1.2)+T);
+ else if(k=='wave')L=Array.from({length:n},(_,i)=>gap((Math.sin(i/1.5)+1)*3.5)+T);
+ else if(k=='box'){const mid='║ '+T+' ║',q=Math.max(1,Math.round((W(mid)-W('╔')-W('╗'))/(W('═')||.6)));L=['╔'+'═'.repeat(q)+'╗',mid,'╚'+'═'.repeat(q)+'╝']}
+ else if(k=='repeat')L=Array(n).fill(T);
+ else{
+  const h=k=='heart',R=Math.max(6,n),emo=S.fill!='text';
+  const ch=emo?[S.fill]:Array.from(t.replace(/\s/g,'')).map(sv);
+  const cw=ch.map(W).reduce((a,b)=>a+b,0)/ch.length||.6,C=Math.round(R*(1.3/cw)*(h?1.083:1));
+  const m=(r,c)=>{if(r<0||c<0||r>=R||c>=C)return false;
+   let x=c/(C-1)*2-1,y=1-r/(R-1)*2;
+   if(h){x*=1.3;y=1.3-r/(R-1)*2.4;return(x*x+y*y-1)**3-x*x*y**3<=0}
+   if(k=='circle')return x*x+y*y<=1;
+   const p=2*Math.PI/5;let d=(((Math.atan2(y,x)-Math.PI/2)%p)+p)%p;d=Math.min(d,p-d);return Math.hypot(x,y)<=1-.62*(d/(p/2))};
+  const f=(r,c)=>{let v=m(r,c);if(v&&S.out)v=!m(r-1,c)||!m(r+1,c)||!m(r,c-1)||!m(r,c+1);return v};
+  let i=0;L=[];
+  for(let r=0;r<R;r++){let line='',c=0;
+   while(c<C){if(!f(r,c)){c++;continue}const c0=c;while(c<C&&f(r,c))c++;
+    line+=gap(c0*cw-W(line));
+    let s='',x=0;const tg=(c-c0)*cw;
+    do{const q=ch[i%ch.length],qw=W(q);if(s&&x+qw/2>tg)break;s+=q;x+=qw;i++}while(x<tg);
+    line+=s}
+   L.push(line)}
+  while(L.length&&!L[0])L.shift();while(L.length&&!L[L.length-1])L.pop();
+ }
+ if(S.rev)L=L.slice().reverse();
+ if(S.deco&&DEC.includes(k))L=L.map(l=>S.deco+' '+l+' '+S.deco);
+ return{L:L.map(fx),geo};
+}
+function out(){
+ const{L,geo}=build();let r=L;
+ if(!geo&&S.align!='left'){const m=Math.max(...L.map(W));r=L.map(l=>{const d=m-W(l);return gap(S.align=='center'?d/2:d)+l})}
+ if(S.inv)r=r.map(l=>'\u200B'+l);
+ return r.join('\n')}
+function render(){
+ const{L,geo}=build(),pv=$('#pv'),g=GEO.includes(S.tpl),sh=SHP.includes(S.tpl);
+ pv.className='pv'+(geo?' geo':'');pv.innerHTML='';
+ $('#alg').classList.toggle('dim',g);$('#fillg').style.display=sh?'':'none';
+ $('#nt').textContent=g?'Shapes are fitted to this phone’s font, so they can shift slightly in other apps. Wide gives the most exact edges.':'Style, effect, alignment and decoration are copied exactly as shown.';
+ const l={stair:'Lines',wave:'Wave length',repeat:'Repeats',heart:'Shape size',circle:'Shape size',star:'Shape size'}[S.tpl];$('#nl').textContent=l||'Not used here';
+ if(!L.length){pv.innerHTML='<p class="ph">Type something above to see it expand.</p>';return}
+ const fs=S.size;pv.style.setProperty('--fs',fs+'px');pv.style.textAlign=geo?'left':S.align;
+ const host=document.createElement('div');if(geo)host.className='blk';
+ const fr=document.createDocumentFragment();
+ L.forEach(x=>{const d=document.createElement('div');d.className='l';d.textContent=x;fr.appendChild(d)});
+ host.appendChild(fr);pv.appendChild(host);
+ if(geo){const av=pv.clientWidth-46,w=host.getBoundingClientRect().width;if(w>av)pv.style.setProperty('--fs',Math.max(6,Math.floor(fs*av/w))+'px')}
+}
+const GR=[['#tp','tpl'],['#fl','fill'],['#st','style'],['#fx','fx'],['#un','unit'],['#al','align'],['#dc','deco']],OP={};
+function sync(id,v){document.querySelectorAll(id+' .ch').forEach(c=>c.classList.toggle('on',c.dataset.v===String(v)))}
+function all(){GR.forEach(([id,k])=>sync(id,S[k]));for(const k in OP)OP[k].classList.toggle('on',S[k]);$('#t').value=S.text;render()}
+function grp(id,items,key){const e=$(id);items.forEach(([v,h,title])=>{const c=document.createElement('button');c.className='ch';c.dataset.v=v;c.innerHTML=h;if(title)c.title=title;
+ c.onclick=()=>{S[key]=v;sync(id,v);render()};e.appendChild(c)});sync(id,S[key])}
+grp('#tp',TP.map(([v,i,n])=>[v,`<b>${i}</b><span>${n}</span>`]),'tpl');
+grp('#fl',FILL,'fill');
+grp('#st',SN.map(([v,n])=>[v,(OK[v]?conv('Abc',v):'Abc')+' '+n,n]),'style');
+document.querySelectorAll('#st .ch').forEach(c=>{if(!OK[c.dataset.v])c.classList.add('dim')});
+if(Object.values(OK).some(v=>!v))$('#stn').textContent='Greyed-out fonts cannot be displayed on this phone, so they are switched off.';
+grp('#fx',FX,'fx');
+grp('#un',[['char','Letters'],['word','Words']],'unit');
+grp('#al',[['left','Left'],['center','Center'],['right','Right']],'align');
+grp('#dc',[['','None'],['✦','✦'],[HT,HT],['★','★'],['❀','❀'],['➤','➤'],['☾','☾']],'deco');
+[['rev','Reverse order'],['inv','Keep spacing in chats'],['out','Outline shapes']].forEach(([k,n])=>{
+ const c=document.createElement('button');c.className='ch'+(S[k]?' on':'');c.textContent=n;c.onclick=()=>{S[k]=!S[k];c.classList.toggle('on',S[k]);render()};OP[k]=c;$('#op').appendChild(c)});
+const LK=[['Romantic',{tpl:'heart'}],['Royal',{tpl:'diamond',style:'boldscript'}],['Cool',{tpl:'expand',style:'mono',deco:'✦'}],['Elegant',{tpl:'pyramid',style:'script'}],['Starry',{tpl:'star',fill:'★'}],['Bio',{tpl:'vertical',style:'bold',deco:HT}]];
+LK.forEach(([n,o])=>{const c=document.createElement('button');c.className='ch';c.textContent=n;c.onclick=()=>{Object.assign(S,{tpl:'expand',style:'normal',deco:'',fill:'text',fx:'none',rev:false,out:false},o);all()};$('#lk').appendChild(c)});
+const PAL=[['#b08d57','#d9b77f'],['#d9637e','#f0a1b4'],['#7c6cf0','#b3a8ff'],['#2fa89a','#7fd6cb'],['#2a2620','#5b5348']];
+PAL.forEach((p,i)=>{const b=document.createElement('button');b.className='sw'+(i?'':' on');b.style.background=`linear-gradient(135deg,${p[0]},${p[1]})`;b.setAttribute('aria-label','Accent '+(i+1));
+ b.onclick=()=>{const r=document.documentElement.style;r.setProperty('--a',p[0]);r.setProperty('--b',p[1]);document.querySelectorAll('.sw').forEach((s,j)=>s.classList.toggle('on',j==i))};$('#sw').appendChild(b)});
+$('#r1').oninput=e=>{S.size=+e.target.value;render()};
+$('#r4').oninput=e=>{S.n=+e.target.value;render()};
+$('#cf').oninput=e=>{const v=e.target.value.trim();if(v){S.fill=v;sync('#fl','');render()}};
+let tm;$('#t').oninput=e=>{S.text=e.target.value;clearTimeout(tm);tm=setTimeout(render,60)};
+function toast(m){const t=$('#ts');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),1800)}
+const KEYS=['text','tpl','style','unit','align','deco','fill','fx','rev','out','n'];
+const REC=()=>{try{return JSON.parse(localStorage.getItem('tes')||'[]')}catch(e){return[]}};
+function saveRec(){try{const r={};KEYS.forEach(k=>r[k]=S[k]);const j=JSON.stringify(r),a=REC().filter(x=>JSON.stringify(x)!==j);a.unshift(r);localStorage.setItem('tes',JSON.stringify(a.slice(0,6)))}catch(e){}showRec()}
+function showRec(){const a=REC(),e=$('#rc');e.innerHTML='';$('#rcg').style.display=a.length?'':'none';
+ a.forEach(r=>{const c=document.createElement('button'),ic=(TP.find(x=>x[0]==r.tpl)||[])[1]||'';c.className='ch';c.textContent=ic+' '+r.text.slice(0,12);c.onclick=()=>{Object.assign(S,r);all()};e.appendChild(c)})}
+async function copy(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(_){}a.remove()}}
+$('#cp').onclick=async()=>{const t=out();if(!t.trim())return toast('Type something first');await copy(t);saveRec();toast('Copied. Paste it anywhere.')};
+$('#sh').onclick=async()=>{const t=out();if(!t.trim())return toast('Type something first');if(navigator.share){try{await navigator.share({text:t});saveRec();return}catch(e){return}}await copy(t);toast('Sharing is not available here. Copied instead.')};
+$('#sv').onclick=()=>{const t=out();if(!t.trim())return toast('Type something first');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain;charset=utf-8'}));a.download='styled-text.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);saveRec();toast('Saved as styled-text.txt')};
+addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key=='Enter')$('#cp').click()});
+let raf=0;document.addEventListener('pointermove',e=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;document.querySelectorAll('.glass').forEach(g=>{const r=g.getBoundingClientRect();g.style.setProperty('--mx',e.clientX-r.left+'px');g.style.setProperty('--my',e.clientY-r.top+'px')})})});
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(render,120)});
+showRec();render();
+</script>
+</body>
+</html>
